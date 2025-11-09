@@ -25,16 +25,18 @@ const Minter = () => {
         setMintedNftId(null);
 
         const txb = new Transaction();
-        const contractAddress = CONTRACTPACKAGEID;
-        const contractModuleName = CONTRACTMODULENAME;
-        const contractMethod = CONTRACTMODULEMETHOD;
+
+        // Convert strings to bytes (vector<u8>)
+        const nameBytes = Array.from(new TextEncoder().encode(name));
+        const descBytes = Array.from(new TextEncoder().encode(description));
+        const urlBytes = Array.from(new TextEncoder().encode(url));
 
         txb.moveCall({
-            target: `${contractAddress}::${contractModuleName}::${contractMethod}`,
+            target: `${CONTRACTPACKAGEID}::${CONTRACTMODULENAME}::${CONTRACTMODULEMETHOD.mint}`,
             arguments: [
-                txb.pure.string(name),
-                txb.pure.string(description),
-                txb.pure.string(url)
+                txb.pure.vector('u8', nameBytes),
+                txb.pure.vector('u8', descBytes),
+                txb.pure.vector('u8', urlBytes)
             ],
         });
 
@@ -58,11 +60,14 @@ const Minter = () => {
                             setDescription('');
                             setUrl('');
                         }
+                    } catch (err) {
+                        console.error("Error waiting for transaction:", err);
                     } finally {
                         setIsMinting(false);
                     }
                 },
-                onError: () => {
+                onError: (err) => {
+                    console.error("Mint failed:", err);
                     setIsMinting(false);
                 }
             },
@@ -70,11 +75,13 @@ const Minter = () => {
     };
 
     return (
-        <div>
+        <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
             {account ? (
-                <div className="mint-form">
+                <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-800">Mint Your NFT</h2>
+                    
                     <input
-                        className="mint-input"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         type="text"
                         placeholder="Name"
                         value={name}
@@ -82,7 +89,7 @@ const Minter = () => {
                         disabled={isMinting}
                     />
                     <input
-                        className="mint-input"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         type="text"
                         placeholder="Description"
                         value={description}
@@ -90,25 +97,29 @@ const Minter = () => {
                         disabled={isMinting}
                     />
                     <input
-                        className="mint-input"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         type="text"
-                        placeholder="URL"
+                        placeholder="Image URL"
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
                         disabled={isMinting}
                     />
-                    <button className="mint-button" onClick={mintNFT} disabled={isMinting}>
+                    <button 
+                        className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed" 
+                        onClick={mintNFT} 
+                        disabled={isMinting || !name || !description || !url}
+                    >
                         {isMinting ? 'Minting...' : 'Mint Your NFT'}
                     </button>
                     {mintedNftId && (
-                        <div className="success-message">
-                            <p>NFT Minted Successfully!</p>
-                            <p>Object ID: {mintedNftId}</p>
+                        <div className="p-4 bg-green-100 text-green-800 rounded-md">
+                            <p className="font-semibold">NFT Minted Successfully!</p>
+                            <p className="text-sm break-all">Object ID: {mintedNftId}</p>
                         </div>
                     )}
                 </div>
             ) : (
-                <p>Connect your wallet to mint an NFT.</p>
+                <p className="text-gray-600">Connect your wallet to mint an NFT.</p>
             )}
         </div>
     );
